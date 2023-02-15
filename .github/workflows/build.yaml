@@ -37,7 +37,7 @@ jobs:
       - run: dart analyze --fatal-infos
 
       - run: dart format --output=none --set-exit-if-changed .
-        if: ${{ matrix.type == test }}
+        if: ${{ matrix.type == "test" }}
 
       - run: dart test
-        if: ${{ matrix.type == test }}
+        if: ${{ matrix.type == "test" }}
