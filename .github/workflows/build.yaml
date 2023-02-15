@@ -21,11 +21,11 @@ jobs:
         type: [analyze]
         include:
           - sdk: stable
-            type: analyze and test
+            type: test
         exclude:
           - sdk: stable
             type: analyze
-    name: pkgs • ${{ matrix.sdk }} • ${{ matrix.type }}
+    name: package:pkgs ${{ matrix.sdk }}
     steps:
       - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
       - uses: dart-lang/setup-dart@6a218f2413a3e78e9087f638a238f6b40893203d
@@ -37,7 +37,7 @@ jobs:
       - run: dart analyze --fatal-infos
 
       - run: dart format --output=none --set-exit-if-changed .
-        if: ${{ contains(matrix.type, 'test') }}
+        if: ${{ matrix.type == "test" }}
 
       - run: dart test
-        if: ${{ contains(matrix.type, 'test') }}
+        if: ${{ matrix.type == "test" }}
