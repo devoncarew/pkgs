@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         sdk: [2.18.0, stable, dev] # {pkgs.versions}
-        type: analyze
+        type: [analyze]
         include:
           - sdk: stable
             type: analyze and test
