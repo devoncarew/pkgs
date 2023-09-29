@@ -18,15 +18,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sdk: [3.0, stable, beta]
+        sdk: ['3.0', 'stable', 'beta']
         include:
-          - sdk: stable
+          - sdk: 'stable'
             run-tests: true
     steps:
       - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
       - uses: dart-lang/setup-dart@8ef13bcca6c9bb2219391088bc9d968125f68406
         with:
-          sdk: ${{matrix.sdk}}
+          sdk: ${{ matrix.sdk }}
 
       - run: dart pub get
 

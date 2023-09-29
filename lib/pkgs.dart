@@ -3,8 +3,6 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart' as yaml;
 
-// todo: args?
-
 // todo: split up the impl
 
 // todo: tests
@@ -230,15 +228,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sdk: [stable, dev] # {pkgs.versions}
+        sdk: ['stable', 'dev'] # {pkgs.versions}
         include:
-          - sdk: stable
+          - sdk: 'stable'
             run-tests: true
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
       - uses: dart-lang/setup-dart@8ef13bcca6c9bb2219391088bc9d968125f68406
         with:
-          sdk: ${{matrix.sdk}}
+          sdk: ${{ matrix.sdk }}
 
       - run: dart pub get
 
