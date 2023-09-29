@@ -17,17 +17,13 @@ jobs:
         working-directory: .
     strategy:
       matrix:
-        sdk: [2.18.0, stable, dev] # {pkgs.versions}
-        type: [analyze]
+        sdk: [3.0, stable, beta]
         include:
           - sdk: stable
-            type: test
-        exclude:
-          - sdk: stable
-            type: analyze
+            run-tests: true
     steps:
       - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
-      - uses: dart-lang/setup-dart@6a218f2413a3e78e9087f638a238f6b40893203d
+      - uses: dart-lang/setup-dart@8ef13bcca6c9bb2219391088bc9d968125f68406
         with:
           sdk: ${{matrix.sdk}}
 
@@ -36,7 +32,7 @@ jobs:
       - run: dart analyze --fatal-infos
 
       - run: dart format --output=none --set-exit-if-changed .
-        if: ${{ matrix.type == 'test' }}
+        if: ${{ matrix.run-tests }}
 
       - run: dart test
-        if: ${{ matrix.type == 'test' }}
+        if: ${{ matrix.run-tests }}
