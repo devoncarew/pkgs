@@ -228,6 +228,7 @@ jobs:
       run:
         working-directory: {{package.path}}
     strategy:
+      fail-fast: false
       matrix:
         sdk: [stable, dev] # {pkgs.versions}
         include:
