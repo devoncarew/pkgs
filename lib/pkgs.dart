@@ -228,7 +228,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sdk: ['stable', 'dev'] # {pkgs.versions}
+        sdk: [stable, dev] # {pkgs.versions}
         include:
           - sdk: 'stable'
             run-tests: true
