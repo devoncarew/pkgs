@@ -234,7 +234,7 @@ jobs:
             run-tests: true
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-      - uses: dart-lang/setup-dart@8ef13bcca6c9bb2219391088bc9d968125f68406
+      - uses: dart-lang/setup-dart@b6470d418f5d8e67774a46d5d89483bd1baaf3fb
         with:
           sdk: ${{ matrix.sdk }}
 
