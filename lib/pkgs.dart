@@ -3,8 +3,6 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart' as yaml;
 
-// todo: args?
-
 // todo: split up the impl
 
 // todo: tests
@@ -62,9 +60,9 @@ labels: "package:${package.pubspecName}"
   // PR labeler
   var labelConfigFile = File(p.join('.github', 'labeler.yml'));
   labelConfigFile.writeAsStringSync('''
-# Configuration for .github/workflows/pull_request_label.yml. 
+# Configuration for .github/workflows/pull_request_label.yml.
 
-'infra':
+'type-infra':
   - '.github/**'
 
 ${packages.map((p) => p.prLabelerConfig).join('\n')}''');
@@ -228,6 +226,7 @@ jobs:
       run:
         working-directory: {{package.path}}
     strategy:
+      fail-fast: false
       matrix:
         sdk: [stable, dev] # {pkgs.versions}
         include:
@@ -235,9 +234,9 @@ jobs:
             run-tests: true
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-      - uses: dart-lang/setup-dart@a57a6c04cf7d4840e88432aad6281d1e125f0d46
+      - uses: dart-lang/setup-dart@b6470d418f5d8e67774a46d5d89483bd1baaf3fb
         with:
-          sdk: ${{matrix.sdk}}
+          sdk: ${{ matrix.sdk }}
 
       - run: dart pub get
 
