@@ -1,167 +1,38 @@
 import 'dart:io';
+import 'dart:math' as math;
 
+import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
-import 'package:yaml/yaml.dart' as yaml;
 
-// todo: split up the impl
-
-// todo: tests
+import 'workspace.dart';
 
 // todo: readme
 
 // todo: update any variables in workflow files (# {pkgs.versions})
 
-void main(List<String> args) {
-  var dir = pkgsDir;
-  if (dir == null) {
-    stderr.writeln('No pkgs/ or packages/ dir found.');
-    exitCode = 1;
-    return;
-  }
+// todo: re-generate workflow files for packages
+// todo: update the package table for the repo readme
+// todo: update the issue templates for a repo
+// todo: update the PR labeller for a repo
 
-  var packages = dir
-      .listSync()
-      .whereType<Directory>()
-      .map((d) => Package(d))
-      .where((p) => p.valid)
-      .toList()
-    ..sort();
+Future<int> main(List<String> args) async {
+  final runner = CommandRunner<int>(
+    'pkgs',
+    '''
+Manage Dart package in a mono-repo.
 
-  print('Found:');
-  for (var package in packages) {
-    print('  ${package.path}');
-  }
-  print('');
+This command requires a workspace.yaml file to exist. An example of a simple
+configuration:
 
-  var readme = File('README.md');
-  // print('## Packages'); // todo:
-  var content = '''
-| Package | Description | Version |
-| --- | --- | --- |
-${packages.map((p) => p.tableRow).join('\n')}
-''';
-  _updateReadme(readme, content);
-  print('Updated ${readme.path}.');
+    # Sample workspace.yaml configuration file.
+    packages:
+      - pkgs/*''',
+  )
+    ..addCommand(ListCommand())
+    ..addCommand(PubGetCommand())
+    ..addCommand(GenerateCommand());
 
-  // issues templates
-  var templates = templateDir;
-  for (var package in packages) {
-    var file = File(p.join(templates.path, '${package.pubspecName}.md'));
-    file.writeAsStringSync('''
----
-name: "package:${package.pubspecName}"
-about: "Create a bug or file a feature request against package:${package.pubspecName}."
-labels: "package:${package.pubspecName}"
----
-''');
-  }
-  print('Wrote templates to ${templates.path}.');
-
-  // PR labeler
-  var labelConfigFile = File(p.join('.github', 'labeler.yml'));
-  labelConfigFile.writeAsStringSync('''
-# Configuration for .github/workflows/pull_request_label.yml.
-
-'type-infra':
-  - '.github/**'
-
-${packages.map((p) => p.prLabelerConfig).join('\n')}''');
-  print('Wrote ${labelConfigFile.path}');
-
-  // Workflow definitions.
-  var wd = workflowsDir;
-  for (var package in packages) {
-    var file = File(p.join(wd.path, '${package.pubspecName}.yml'));
-    var branch = getDefaultBranch(Directory.current)!;
-    var content = workflowDefinition
-        .replaceAll(r'{{package.name}}', package.pubspecName)
-        .replaceAll(r'{{package.path}}', package.path)
-        .replaceAll('{{branch}}', branch);
-    file.writeAsStringSync(content);
-  }
-  print('Wrote workflow files to ${wd.path}.');
-}
-
-void _updateReadme(File file, String content) {
-  const title = '## Packages';
-  if (!file.existsSync()) {
-    file.writeAsStringSync('''
-$title
-
-$content''');
-  } else if (!file.readAsStringSync().contains(title)) {
-    file.writeAsStringSync('\n$title\n\n$content', mode: FileMode.append);
-  } else {
-    var lines = file.readAsLinesSync();
-    var buf = StringBuffer();
-    bool skip = false;
-
-    for (var line in lines) {
-      if (line.startsWith('## ')) {
-        if (skip) {
-          skip = false;
-        } else if (line == title) {
-          skip = true;
-          buf.writeln('$title\n\n$content');
-        }
-      }
-      if (!skip) {
-        buf.writeln(line);
-      }
-    }
-
-    file.writeAsStringSync(buf.toString());
-  }
-}
-
-class Package implements Comparable<Package> {
-  final Directory dir;
-  yaml.YamlMap? pubspec;
-
-  Package(this.dir) {
-    var pubspecFile = File(p.join(dir.path, 'pubspec.yaml'));
-    if (pubspecFile.existsSync()) {
-      pubspec = yaml.loadYaml(pubspecFile.readAsStringSync()) as yaml.YamlMap;
-    }
-  }
-
-  bool get valid => pubspec != null;
-
-  String get path => dir.path;
-
-  String get dirName => p.basename(dir.path);
-
-  String get pubspecName => pubspec!['name'];
-
-  String? get description {
-    var pubspecFile = File(p.join(dir.path, 'pubspec.yaml'));
-    var pubspec = yaml.loadYaml(pubspecFile.readAsStringSync()) as yaml.YamlMap;
-    return (pubspec['description'] as String?)?.trim();
-  }
-
-  bool get publishable => pubspec != null && pubspec!['publish_to'] != 'none';
-
-  String? get pubBadgeRef {
-    if (!publishable) return null;
-
-    return '[![pub package](https://img.shields.io/pub/v/$pubspecName.svg)]'
-        '(https://pub.dev/packages/$pubspecName)';
-  }
-
-  String get prLabelerConfig => '''
-'package:$pubspecName':
-  - '$path/**'
-''';
-
-  String get tableRow => '| [$pubspecName]($path/) | '
-      '${description ?? ''} | '
-      '${publishable ? pubBadgeRef : ''} |';
-
-  @override
-  int compareTo(Package other) => dirName.compareTo(other.dirName);
-
-  @override
-  String toString() => dirName;
+  return await runner.run(args) ?? 0;
 }
 
 Directory? get pkgsDir => dirIfExists('pkgs') ?? dirIfExists('packages');
@@ -203,6 +74,7 @@ String? getDefaultBranch(Directory repoDir) {
 
 const String workflowDefinition = r'''
 name: package:{{package.name}}
+
 permissions: read-all
 
 on:
@@ -233,7 +105,7 @@ jobs:
           - sdk: stable
             run-tests: true
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
       - uses: dart-lang/setup-dart@b64355ae6ca0b5d484f0106a033dd1388965d06d
         with:
           sdk: ${{ matrix.sdk }}
@@ -248,3 +120,214 @@ jobs:
       - run: dart test
         if: ${{matrix.run-tests}}
 ''';
+
+abstract class AbstractCommand extends Command<int> {
+  @override
+  final String name;
+
+  @override
+  final String description;
+
+  Workspace? _workspace;
+
+  Workspace? get workspace =>
+      (_workspace ??= Workspace.locate() ?? Workspace.fromPkgs());
+
+  AbstractCommand({required this.name, required this.description});
+
+  @override
+  Future<int> run();
+}
+
+class ListCommand extends AbstractCommand {
+  ListCommand()
+      : super(
+          name: 'list',
+          description: 'List the packages that make up this workspace.',
+        );
+
+  @override
+  Future<int> run() async {
+    final workspace = this.workspace;
+    if (workspace == null) {
+      print('No workspace found.');
+      return 1;
+    }
+
+    if (workspace.packages.isEmpty) {
+      print('No packages found.');
+      return 0;
+    }
+
+    print('${workspace.packages.length} packages:');
+    for (final package in workspace.packages) {
+      print('  - ${package.path}');
+    }
+
+    return 0;
+  }
+}
+
+class PubGetCommand extends AbstractCommand {
+  PubGetCommand() : super(name: 'pub-get', description: 'todo: doc') {
+    argParser.addFlag(
+      'upgrade',
+      negatable: true,
+      defaultsTo: true,
+      help: 'todo:',
+    );
+  }
+
+  @override
+  Future<int> run() async {
+    final workspace = this.workspace;
+    if (workspace == null) {
+      print('No workspace found.');
+      return 1;
+    }
+
+    if (workspace.packages.isEmpty) {
+      print('No packages found.');
+      return 0;
+    }
+
+    final pubUpgrade = argResults!['upgrade'] as bool;
+    final command = pubUpgrade ? 'upgrade' : 'get';
+
+    var firstPackage = true;
+    var exitCode = 0;
+
+    for (final package in workspace.packages) {
+      if (!firstPackage) {
+        print('');
+      }
+      firstPackage = false;
+
+      print('[${package.path}] dart pub $command');
+      print('');
+
+      final process = await Process.start(
+        Platform.executable,
+        ['pub', command, '--color'],
+        workingDirectory: package.path,
+      );
+      process.stdout.listen(stdout.add);
+      process.stderr.listen(stderr.add);
+
+      exitCode = math.max(exitCode, await process.exitCode);
+    }
+
+    return exitCode;
+  }
+}
+
+class GenerateCommand extends AbstractCommand {
+  GenerateCommand()
+      : super(
+          name: 'generate',
+          description: 'Generate various artifacts and package meta-data.',
+        );
+
+  @override
+  Future<int> run() async {
+    // pkgs generate [--readme] [--issues] [--labeller] [--workflows] [--all]
+
+    // todo: clean this up
+
+    final workspace = this.workspace;
+    if (workspace == null) {
+      print('No workspace found.');
+      return 1;
+    }
+
+    var packages = workspace.packages.toList()..sort();
+
+    print('Found:');
+    for (var package in packages) {
+      print('  ${package.path}');
+    }
+    print('');
+
+    var readme = File('README.md');
+    // print('## Packages'); // todo:
+    var content = '''
+| Package | Description | Version |
+| --- | --- | --- |
+${packages.map((p) => p.tableRow).join('\n')}
+''';
+    _updateReadme(readme, content);
+    print('Updated ${readme.path}.');
+
+    // issues templates
+    var templates = templateDir;
+    for (var package in packages) {
+      var file = File(p.join(templates.path, '${package.pubspecName}.md'));
+      file.writeAsStringSync('''
+---
+name: "package:${package.pubspecName}"
+about: "Create a bug or file a feature request against package:${package.pubspecName}."
+labels: "package:${package.pubspecName}"
+---
+''');
+    }
+    print('Wrote templates to ${templates.path}.');
+
+    // PR labeler
+    var labelConfigFile = File(p.join('.github', 'labeler.yml'));
+    labelConfigFile.writeAsStringSync('''
+# Configuration for .github/workflows/pull_request_label.yml.
+
+'type-infra':
+  - '.github/**'
+
+${packages.map((p) => p.prLabelerConfig).join('\n')}''');
+    print('Wrote ${labelConfigFile.path}');
+
+    // Workflow definitions.
+    var wd = workflowsDir;
+    for (var package in packages) {
+      var file = File(p.join(wd.path, '${package.pubspecName}.yml'));
+      var branch = getDefaultBranch(Directory.current)!;
+      var content = workflowDefinition
+          .replaceAll(r'{{package.name}}', package.pubspecName)
+          .replaceAll(r'{{package.path}}', package.path)
+          .replaceAll('{{branch}}', branch);
+      file.writeAsStringSync(content);
+    }
+    print('Wrote workflow files to ${wd.path}.');
+
+    return 0;
+  }
+
+  void _updateReadme(File file, String content) {
+    const title = '## Packages';
+    if (!file.existsSync()) {
+      file.writeAsStringSync('''
+$title
+
+$content''');
+    } else if (!file.readAsStringSync().contains(title)) {
+      file.writeAsStringSync('\n$title\n\n$content', mode: FileMode.append);
+    } else {
+      var lines = file.readAsLinesSync();
+      var buf = StringBuffer();
+      bool skip = false;
+
+      for (var line in lines) {
+        if (line.startsWith('## ')) {
+          if (skip) {
+            skip = false;
+          } else if (line == title) {
+            skip = true;
+            buf.writeln('$title\n\n$content');
+          }
+        }
+        if (!skip) {
+          buf.writeln(line);
+        }
+      }
+
+      file.writeAsStringSync(buf.toString());
+    }
+  }
+}
