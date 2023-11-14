@@ -5,7 +5,7 @@ An experimental tool to manage mono-repos.
 ## Usage
 
 ```
-Manage Dart package in a mono-repo.
+Manage Dart packages in a mono-repo.
 
 This command requires a workspace.yaml file to exist. An example of a simple
 configuration:
@@ -22,7 +22,7 @@ Global options:
 Available commands:
   generate   Generate various artifacts and package meta-data.
   list       List the packages that make up this workspace.
-  pub-get    todo: doc
+  pub-get    Run pub get and pub upgrade for the workspaces packages.
 
 Run "pkgs help <command>" for more information about a command.
 ```

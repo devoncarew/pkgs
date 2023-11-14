@@ -6,8 +6,6 @@ import 'package:path/path.dart' as p;
 
 import 'workspace.dart';
 
-// todo: readme
-
 // todo: update any variables in workflow files (# {pkgs.versions})
 
 // todo: re-generate workflow files for packages
@@ -19,7 +17,7 @@ Future<int> main(List<String> args) async {
   final runner = CommandRunner<int>(
     'pkgs',
     '''
-Manage Dart package in a mono-repo.
+Manage Dart packages in a mono-repo.
 
 This command requires a workspace.yaml file to exist. An example of a simple
 configuration:
@@ -169,12 +167,18 @@ class ListCommand extends AbstractCommand {
 }
 
 class PubGetCommand extends AbstractCommand {
-  PubGetCommand() : super(name: 'pub-get', description: 'todo: doc') {
+  PubGetCommand()
+      : super(
+          name: 'pub-get',
+          description:
+              'Run pub get and pub upgrade for the workspaces packages.\n'
+              'Defaults to running \'pub upgrade\'.',
+        ) {
     argParser.addFlag(
       'upgrade',
       negatable: true,
       defaultsTo: true,
-      help: 'todo:',
+      help: 'Whether to run pub get or pub upgrade.',
     );
   }
 
