@@ -89,22 +89,20 @@ on:
   schedule:
     - cron: '0 0 * * 0' # weekly
 
+defaults:
+  run:
+    working-directory: {{package.path}}
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: {{package.path}}
     strategy:
       fail-fast: false
       matrix:
-        sdk: [stable, dev] # {pkgs.versions}
-        include:
-          - sdk: stable
-            run-tests: true
+        sdk: [stable, dev]
     steps:
-      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
-      - uses: dart-lang/setup-dart@b64355ae6ca0b5d484f0106a033dd1388965d06d
+      - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
+      - uses: dart-lang/setup-dart@0a8a0fc875eb934c15d08629302413c671d3f672
         with:
           sdk: ${{ matrix.sdk }}
 
@@ -113,10 +111,9 @@ jobs:
       - run: dart analyze --fatal-infos
 
       - run: dart format --output=none --set-exit-if-changed .
-        if: ${{matrix.run-tests}}
+        if: ${{ matrix.sdk == 'stable' }}
 
       - run: dart test
-        if: ${{matrix.run-tests}}
 ''';
 
 abstract class AbstractCommand extends Command<int> {
@@ -279,10 +276,11 @@ labels: "package:${package.pubspecName}"
     // PR labeler
     var labelConfigFile = File(p.join('.github', 'labeler.yml'));
     labelConfigFile.writeAsStringSync('''
-# Configuration for .github/workflows/pull_request_label.yml.
+# This configures the .github/workflows/pull_request_label.yml workflow.
 
 'type-infra':
-  - '.github/**'
+  - changed-files:
+    - '.github/**'
 
 ${packages.map((p) => p.prLabelerConfig).join('\n')}''');
     print('Wrote ${labelConfigFile.path}');
