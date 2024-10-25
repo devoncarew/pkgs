@@ -35,7 +35,8 @@ class Package implements Comparable<Package> {
 
   String get prLabelerConfig => '''
 'package:$pubspecName':
-  - '$path/**'
+  - changed-files:
+    - '$path/**'
 ''';
 
   String get tableRow => '| [$pubspecName]($path/) | '
